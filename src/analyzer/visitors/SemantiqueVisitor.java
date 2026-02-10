@@ -91,7 +91,6 @@ public class SemantiqueVisitor implements ParserVisitor {
     public Object visit(ASTDeclareStmt node, Object data) {
         String varName = ((ASTIdentifier) node.jjtGetChild(0)).getValue();
 
-        @SuppressWarnings("unchecked")
         HashMap<String, VarType> table = (HashMap<String, VarType>) data;
 
         if (table.containsKey(varName)) {
@@ -116,7 +115,6 @@ public class SemantiqueVisitor implements ParserVisitor {
 
     @Override
     public Object visit(ASTAssignStmt node, Object data) {
-        @SuppressWarnings("unchecked")
         HashMap<String, VarType> table = (HashMap<String, VarType>) data;
 
         ASTIdentifier idNode = (ASTIdentifier) node.jjtGetChild(0);
@@ -161,7 +159,6 @@ public class SemantiqueVisitor implements ParserVisitor {
 
     @Override
     public Object visit(ASTIfBlock node, Object data) {
-        @SuppressWarnings("unchecked")
         HashMap<String, VarType> parent = (HashMap<String, VarType>) data;
         HashMap<String, VarType> local = new HashMap<>(parent);
         node.childrenAccept(this, local);
@@ -170,7 +167,6 @@ public class SemantiqueVisitor implements ParserVisitor {
 
     @Override
     public Object visit(ASTElseBlock node, Object data) {
-        @SuppressWarnings("unchecked")
         HashMap<String, VarType> parent = (HashMap<String, VarType>) data;
         HashMap<String, VarType> local = new HashMap<>(parent);
         node.childrenAccept(this, local);
@@ -228,7 +224,6 @@ public class SemantiqueVisitor implements ParserVisitor {
 
     @Override
     public Object visit(ASTWhileBlock node, Object data) {
-        @SuppressWarnings("unchecked")
         HashMap<String, VarType> parent = (HashMap<String, VarType>) data;
         HashMap<String, VarType> local = new HashMap<>(parent);
         node.childrenAccept(this, local);
@@ -410,7 +405,6 @@ public class SemantiqueVisitor implements ParserVisitor {
     @Override
     public Object visit(ASTIdentifier node, Object data) {
         if (node.jjtGetParent() instanceof ASTGenValue) {
-            @SuppressWarnings("unchecked")
             HashMap<String, VarType> table = (HashMap<String, VarType>) data;
             String name = node.getValue();
 
