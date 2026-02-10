@@ -96,7 +96,7 @@ public class SemantiqueVisitor implements ParserVisitor {
         if (SymbolTable.containsKey(varName)) {
             throw new SemantiqueError(String.format("Identifier %s has multiple declarations.", varName));
         }
-        SymbolTable.put(varName, node.getValue().equals("num") ? VarType.INT : VarType.BOOL);
+        SymbolTable.put(varName, node.getValue().equals("num") ? VarType.INT : VarType.BOOLEAN);
 
         return null;
     }
@@ -206,8 +206,24 @@ public class SemantiqueVisitor implements ParserVisitor {
 
     @Override
     public Object visit(ASTAddExpr node, Object data) {
-        // TODO
-        node.childrenAccept(this, data);
+        int numChildren = node.jjtGetNumChildren();
+
+        if (numChildren > 1) {
+            this.OP++;
+        }
+
+        for (int i = 0; i < numChildren; i++) {
+            DataStruct d = new DataStruct();
+            node.jjtGetChild(i).jjtAccept(this, d);
+
+            if (numChildren > 1 && d.type == VarType.BOOLEAN) {
+                throw new SemantiqueError("Invalid type in expression");
+            }
+
+            if (d.type != null) {
+                ((DataStruct)data).type = d.type;
+            }
+        }
         return null;
     }
 
@@ -284,7 +300,7 @@ public class SemantiqueVisitor implements ParserVisitor {
     //des outils pour vous simplifier la vie et vous enligner dans le travail
     public enum VarType {
         INT,
-        BOOL,
+        BOOLEAN,
     }
 
 
