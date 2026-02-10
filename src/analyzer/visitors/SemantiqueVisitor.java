@@ -89,10 +89,14 @@ public class SemantiqueVisitor implements ParserVisitor {
 
     @Override
     public Object visit(ASTDeclareStmt node, Object data) {
+        this.VAR++;
+
         String varName = ((ASTIdentifier) node.jjtGetChild(0)).getValue();
 
-        // TODO
-        node.childrenAccept(this, data);
+        if (SymbolTable.containsKey(varName)) {
+            throw new SemantiqueError(String.format("Identifier %s has multiple declarations.", varName));
+        }
+        SymbolTable.put(varName, node.getValue().equals("num") ? VarType.INT : VarType.BOOL);
 
         return null;
     }
@@ -279,8 +283,8 @@ public class SemantiqueVisitor implements ParserVisitor {
 
     //des outils pour vous simplifier la vie et vous enligner dans le travail
     public enum VarType {
-        INT
-        // À compléter
+        INT,
+        BOOL,
     }
 
 
