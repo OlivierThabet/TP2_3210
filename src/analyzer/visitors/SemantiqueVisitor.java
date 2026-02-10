@@ -94,17 +94,14 @@ public class SemantiqueVisitor implements ParserVisitor {
         @SuppressWarnings("unchecked")
         HashMap<String, VarType> table = (HashMap<String, VarType>) data;
 
-        // Double declaration check
         if (table.containsKey(varName)) {
             throw new SemantiqueError(String.format("Identifier %s has multiple declarations", varName));
         }
 
-        // Map declared type string to VarType
         VarType declaredType = stringToVarType(node.getValue());
         table.put(varName, declaredType);
         this.VAR++;
 
-        // Optional initialization expression
         if (node.jjtGetNumChildren() > 1) {
             VarType exprType = (VarType) node.jjtGetChild(1).jjtAccept(this, table);
             if (!typesEqual(declaredType, exprType)) {
@@ -145,7 +142,6 @@ public class SemantiqueVisitor implements ParserVisitor {
     // Elle sont aussi les seules structure avec des block qui devront garder leur déclaration locale.
     @Override
     public Object visit(ASTIfStmt node, Object data) {
-        // Count this conditional structure
         this.IF++;
 
         node.childrenAccept(this, data);
@@ -154,7 +150,6 @@ public class SemantiqueVisitor implements ParserVisitor {
 
     @Override
     public Object visit(ASTIfCond node, Object data) {
-        // The condition expression must evaluate to a boolean
         if (node.jjtGetNumChildren() > 0) {
             VarType condType = (VarType) node.jjtGetChild(0).jjtAccept(this, data);
             if (condType != VarType.BOOL) {
@@ -166,7 +161,6 @@ public class SemantiqueVisitor implements ParserVisitor {
 
     @Override
     public Object visit(ASTIfBlock node, Object data) {
-        // New local scope inside the if block
         @SuppressWarnings("unchecked")
         HashMap<String, VarType> parent = (HashMap<String, VarType>) data;
         HashMap<String, VarType> local = new HashMap<>(parent);
@@ -176,7 +170,6 @@ public class SemantiqueVisitor implements ParserVisitor {
 
     @Override
     public Object visit(ASTElseBlock node, Object data) {
-        // New local scope inside the else block
         @SuppressWarnings("unchecked")
         HashMap<String, VarType> parent = (HashMap<String, VarType>) data;
         HashMap<String, VarType> local = new HashMap<>(parent);
@@ -188,14 +181,11 @@ public class SemantiqueVisitor implements ParserVisitor {
     public Object visit(ASTTernary node, Object data) {
         int nbChildren = node.jjtGetNumChildren();
 
-        // No ternary operator, just forward the single expression type
         if (nbChildren == 1) {
             return node.jjtGetChild(0).jjtAccept(this, data);
         }
 
-        // Ternary expression ? : has three children: condition, then, else
         if (nbChildren == 3) {
-            // Ternary is considered as a conditional for the IF metric
             this.IF++;
 
             VarType condType = (VarType) node.jjtGetChild(0).jjtAccept(this, data);
@@ -213,14 +203,12 @@ public class SemantiqueVisitor implements ParserVisitor {
             return thenType;
         }
 
-        // Should not happen with the given grammar, fallback
         node.childrenAccept(this, data);
         return null;
     }
 
     @Override
     public Object visit(ASTWhileStmt node, Object data) {
-        // Count while/do-while structures
         this.WHILE++;
 
         node.childrenAccept(this, data);
@@ -229,7 +217,6 @@ public class SemantiqueVisitor implements ParserVisitor {
 
     @Override
     public Object visit(ASTWhileCond node, Object data) {
-        // The condition expression must evaluate to a boolean
         if (node.jjtGetNumChildren() > 0) {
             VarType condType = (VarType) node.jjtGetChild(0).jjtAccept(this, data);
             if (condType != VarType.BOOL) {
@@ -241,7 +228,6 @@ public class SemantiqueVisitor implements ParserVisitor {
 
     @Override
     public Object visit(ASTWhileBlock node, Object data) {
-        // New local scope inside the while/do-while block
         @SuppressWarnings("unchecked")
         HashMap<String, VarType> parent = (HashMap<String, VarType>) data;
         HashMap<String, VarType> local = new HashMap<>(parent);
@@ -251,7 +237,6 @@ public class SemantiqueVisitor implements ParserVisitor {
 
     @Override
     public Object visit(ASTDoWhileStmt node, Object data) {
-        // Do-while also counts as a while for the metric
         this.WHILE++;
 
         node.childrenAccept(this, data);
@@ -270,12 +255,10 @@ public class SemantiqueVisitor implements ParserVisitor {
         */
         int nbChildren = node.jjtGetNumChildren();
 
-        // Single child, just forward the type
         if (nbChildren == 1) {
             return node.jjtGetChild(0).jjtAccept(this, data);
         }
 
-        // Comparison between operands, count operations
         this.OP += (nbChildren - 1);
 
         String op = node.getValue();
@@ -288,12 +271,10 @@ public class SemantiqueVisitor implements ParserVisitor {
             VarType rightType = (VarType) node.jjtGetChild(i).jjtAccept(this, data);
 
             if (isNumericCompare) {
-                // Numeric comparisons only accept numeric operands
                 if (!isNumeric(leftType) || !isNumeric(rightType)) {
                     throw new SemantiqueError("Invalid type in expression");
                 }
             } else {
-                // == and != accept operands of the same type
                 if (!typesEqual(leftType, rightType)) {
                     throw new SemantiqueError("Invalid type in expression");
                 }
@@ -317,7 +298,6 @@ public class SemantiqueVisitor implements ParserVisitor {
     public Object visit(ASTLogExpr node, Object data) {
         int nbChildren = node.jjtGetNumChildren();
 
-        // Count logical operators
         if (nbChildren > 1) {
             this.OP += (nbChildren - 1);
         }
@@ -350,7 +330,6 @@ public class SemantiqueVisitor implements ParserVisitor {
             if (resultType == null) {
                 resultType = childType;
             } else if (resultType != childType) {
-                // Mixing different numeric types is not allowed in this language
                 throw new SemantiqueError("Invalid type in expression");
             }
         }
@@ -389,7 +368,6 @@ public class SemantiqueVisitor implements ParserVisitor {
     */
     @Override
     public Object visit(ASTNotExpr node, Object data) {
-        // Each NOT expression represents one logical operation
         this.OP++;
 
         if (node.jjtGetNumChildren() > 0) {
@@ -404,7 +382,6 @@ public class SemantiqueVisitor implements ParserVisitor {
 
     @Override
     public Object visit(ASTNegExpr node, Object data) {
-        // Each NEG expression represents one numeric operation
         this.OP++;
 
         if (node.jjtGetNumChildren() > 0) {
@@ -427,7 +404,6 @@ public class SemantiqueVisitor implements ParserVisitor {
         if (node.jjtGetNumChildren() == 0) {
             return null;
         }
-        // Just forward the type of the contained value
         return node.jjtGetChild(0).jjtAccept(this, data);
     }
 
@@ -467,7 +443,6 @@ public class SemantiqueVisitor implements ParserVisitor {
     public Object visit(ASTListExpr node, Object data) {
         int nbChildren = node.jjtGetNumChildren();
 
-        // Empty list, type is simply LIST (element type unknown)
         if (nbChildren == 0) {
             return VarType.LIST;
         }
