@@ -3,7 +3,6 @@
 
 #Gen files
 out/
-gen-src/
 
 #Run files
 test-suite/**/result
