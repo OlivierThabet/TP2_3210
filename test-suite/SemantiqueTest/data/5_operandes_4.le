@@ -1,0 +1,7 @@
+int a;
+bool b;
+
+// erreur operandes
+a = 1;
+
+b = a || true;

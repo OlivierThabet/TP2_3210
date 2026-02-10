@@ -1,0 +1,4 @@
+bool a;
+
+// erreur operandes
+a = true < false;

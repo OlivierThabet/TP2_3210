@@ -1,0 +1,8 @@
+bool a = true;
+
+if(a){
+    while(true){
+        int b = 0;
+    }
+    b = 1;
+}

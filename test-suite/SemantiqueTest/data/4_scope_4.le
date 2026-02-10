@@ -1,0 +1,11 @@
+bool a = true;
+
+while(a){
+    if(true){
+        int b = 0;
+    }
+
+    bool c;
+}
+
+c = false;

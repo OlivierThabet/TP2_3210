@@ -1,0 +1,2 @@
+bool a = -4;
+bool b = a < 3;

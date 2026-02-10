@@ -1,0 +1,3 @@
+int a;
+// erreur operandes
+a = true + 2;

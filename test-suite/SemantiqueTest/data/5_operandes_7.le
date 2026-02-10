@@ -1,0 +1,4 @@
+bool a;
+int b;
+// erreur operandes
+a = 1 != [];

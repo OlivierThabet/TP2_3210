@@ -1,0 +1,296 @@
+options {
+	JAVA_UNICODE_ESCAPE=true;
+	STATIC=false;					// 1 seul parseur actif a la fois (+ rapide)
+	MULTI=true;						// type noeud = f(nom noeud)
+	VISITOR=true;					// Cree une methode accept(visiteur)
+}
+
+//
+// PARSER DEFINITION
+//
+
+PARSER_BEGIN(Parser)
+
+package analyzer.ast;
+
+public class Parser
+{
+	public static ASTProgram ParseTree(java.io.InputStream input) throws ParseException
+	{
+		Parser c = new Parser(input);
+		return c.Program();
+	}
+}
+
+PARSER_END(Parser)
+
+//
+// LEXICAL ANALYSIS
+//
+
+// White space
+
+SKIP :
+{
+	< ( " " | "\t" | "\n" | "\r" )+	>
+}
+
+// Comments
+
+MORE :
+{
+  "//" : IN_SINGLE_LINE_COMMENT
+|
+  <"/**" ~["/"]> { input_stream.backup(1); } : IN_FORMAL_COMMENT
+|
+  "/*" : IN_MULTI_LINE_COMMENT
+}
+
+<IN_SINGLE_LINE_COMMENT>
+SPECIAL_TOKEN :
+{
+  <SINGLE_LINE_COMMENT: "\n" | "\r" | "\r\n" > : DEFAULT
+}
+
+<IN_FORMAL_COMMENT>
+SPECIAL_TOKEN :
+{
+  <FORMAL_COMMENT: "*/" > : DEFAULT
+}
+
+<IN_MULTI_LINE_COMMENT>
+SPECIAL_TOKEN :
+{
+  <MULTI_LINE_COMMENT: "*/" > : DEFAULT
+}
+
+<IN_SINGLE_LINE_COMMENT,IN_FORMAL_COMMENT,IN_MULTI_LINE_COMMENT>
+MORE :
+{
+  < ~[] >
+}
+
+
+
+
+// Keywords
+TOKEN :
+{
+	< IF: "if"	> |
+	< ELSE: "else" > |
+	< PRINT: "print" > |
+	< INPUT: "input" > |
+	< IN: "in" > |
+	< DO: "do" > |
+	< WHILE: "while" > |
+	< SWITCH: "switch" > |
+	< CASE: "case" > |
+    < DEF: "default">|
+    < FOR: "for"> |
+    < FUNC: "func"> |
+    < RET: "return">
+	// À compléter au besoin
+}
+
+//Type
+TOKEN :
+{
+    < TYPE: <BOOL> | <INT> | <FLOAT> | <LIST> >|
+    < #BOOL: "bool"> |
+    < #INT:  "int"> |
+    < #FLOAT: "float" > |
+	< #LIST: "list">
+}
+
+// Operators
+TOKEN :
+{
+	< ASSIGN: < EQUAL >  > |
+	< NUMCOMPARE: < LESS > | < LESSEQUAL > | < GREAT > | <GREATEQUAL > > |
+	< COMPARE: < DIFF > | < EQUALEQUAL > > |
+    < LOGIC: < AND > | < OR > > |
+	< #LESS: "<" > |
+	< #LESSEQUAL: "<=" > |
+	< #GREAT: ">" > |
+	< #GREATEQUAL: ">=" > |
+	< #DIFF: "!=" > |
+	< #EQUALEQUAL: "==" > |
+
+	< PLUS: "+" > |
+	< MINUS: "-" > |
+	< FOIS: "*" > |
+	< DIV: "/" > |
+    < NOT: "!" > |
+
+	< #EQUAL: "=" > |
+	< LPAREN: "(" > |
+	< RPAREN: ")" > |
+	< LACC: "{" > |
+	< RACC: "}" > |
+	< LBRA: "[" > |
+	< RBRA: "]" > |
+	< COLON: ":" > |
+	< SEMICOLON: ";" > |
+	< COMMA: "," > |
+	< #AND: "&&" > |
+	< #OR: "||" > |
+	< CONDITIONAL: "?" >
+	// À compléter au besoin
+}
+
+
+// Identifiers and numbers
+TOKEN :
+{
+	< TRUE: "true"> |
+	< FALSE: "false"> |
+	< IDENTIFIER: <LETTER> ( <LETTER> | <DIGIT> )* > |
+	< #LETTER: ["a"-"z","A"-"Z","_"] > |
+	< #DIGIT: ["0"-"9"] > |
+	< INTEGER: ["1"-"9"] (["0"-"9"])* | "0" > |
+	< REAL: (<INTEGER>)? "." (<INTEGER>)|(<INTEGER>) "." (<INTEGER>)? (<EXPOSANT>)? > |
+    < #EXPOSANT : ["e","E"](["+","-"]) <INTEGER> >
+}
+
+//
+// SYNTAX ANALYSIS
+//
+
+ASTProgram Program() : {}
+{
+	Block() <EOF> { return jjtThis;  }
+}
+
+void Block() #void : {}
+{
+	 ( Stmt() )*
+}
+
+// ---------- STATEMENTS BEGIN ----------
+
+void Stmt() #void : {}
+{
+    DeclareStmt() <SEMICOLON> |
+	AssignStmt() <SEMICOLON> |
+	WhileStmt() |
+	DoWhileStmt() <SEMICOLON> |
+	IfStmt() |
+	<SEMICOLON>
+}
+
+void DeclareStmt () : { Token t; }
+{
+     t = <TYPE> {jjtThis.setValue(t.image);} Identifier() [<ASSIGN> Expr()]
+}
+
+void AssignStmt() : {}
+{
+	Identifier() <ASSIGN> Expr()
+}
+
+void WhileStmt() : {}
+{
+    <WHILE> <LPAREN> Expr()#WhileCond <RPAREN>
+     (Stmt() | <LACC> Block() <RACC>)#WhileBlock
+}
+
+void DoWhileStmt() : {}
+{
+    <DO> (Stmt() | <LACC> Block() <RACC>)#WhileBlock
+    <WHILE> <LPAREN> Expr()#WhileCond <RPAREN>
+}
+
+void IfStmt() : {} {
+    <IF> <LPAREN> Expr()#IfCond <RPAREN> (Stmt() | <LACC> Block() <RACC>)#IfBlock [LOOKAHEAD(1)ElseStmt()]
+}
+
+void ElseStmt() #void : {} {
+    <ELSE> (Stmt() | <LACC> Block() <RACC>)#ElseBlock
+}
+
+// ---------- STATEMENTS END ----------
+
+// ---------- EXPRESSIONS BEGIN ----------
+
+void Expr() #void : {}
+{
+    TernaryExpr()
+}
+
+void TernaryExpr() #Ternary(>1) : {}
+{
+    LogExpr() [ <CONDITIONAL> TernaryExpr() <COLON> TernaryExpr() ]
+}
+
+void LogExpr() #LogExpr (>1) : {} {
+    CompExpr() (<LOGIC> CompExpr())*
+}
+
+void CompExpr() #CompExpr(>1) : {Token t;}
+{
+    AddExpr() ((t = <COMPARE> | t = <NUMCOMPARE> ) {jjtThis.setValue(t.image);} AddExpr())*
+}
+
+void AddExpr() #AddExpr(>1) : {}
+{
+    MulExpr() ((<PLUS> | <MINUS>) MulExpr())*
+}
+
+void MulExpr() #MultExpr(>1) : {}
+{
+    NegExpr() ((<FOIS> | <DIV>) NegExpr())*
+}
+
+void NegExpr() #void : {}
+{
+     (<MINUS> NegExpr()) #NegExpr | NotExpr()
+}
+
+void NotExpr() #void : {}
+{
+     (<NOT> NotExpr()) #NotExpr | ParenExpr()
+}
+
+void ParenExpr() #void : {}
+{
+    <LPAREN> Expr() <RPAREN> | GenValue()
+}
+
+void ListExpr() : {}
+{
+    <LBRA> [Expr() (<COMMA> Expr())*] <RBRA>
+}
+
+void GenValue() : {}
+{
+    NumValue() | BoolValue() | Identifier() | ListExpr()
+}
+
+// Expressions de base
+
+void Identifier() : { Token t;}
+{
+	t = <IDENTIFIER> {jjtThis.setValue(t.image);}
+}
+
+void BoolValue() : { Token t;}
+{
+    t = <TRUE> | t = <FALSE> {jjtThis.setValue(t.image);}
+}
+
+void NumValue () #void : {}
+{
+    IntValue() | RealValue()
+}
+
+void IntValue() : { Token t;}
+{
+	t = <INTEGER> {jjtThis.setValue(Integer.parseInt(t.image));}
+}
+
+void RealValue() : { Token t; }
+{
+	t = <REAL> {jjtThis.setValue(Float.parseFloat(t.image));}
+}
+
+// ---------- EXPRESSIONS END ----------

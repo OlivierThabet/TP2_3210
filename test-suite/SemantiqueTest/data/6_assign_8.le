@@ -1,0 +1,7 @@
+bool a;
+bool b;
+int c;
+
+c = 10;
+a = c - 4;
+b = b != false;

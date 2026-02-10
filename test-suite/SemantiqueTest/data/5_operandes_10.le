@@ -1,0 +1,9 @@
+bool a;
+int b;
+float c = 0.5;
+list d = [1, 2, 3, b];
+// Operantes fonctionnelles:
+b = 1;
+a = b == 1;
+a = c >= 0.6;
+bool e = d == [2, 3];
