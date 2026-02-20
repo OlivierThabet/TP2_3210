@@ -462,21 +462,6 @@ public class SemantiqueVisitor implements ParserVisitor {
         LIST
     }
 
-
-    private class DataStruct {
-        public VarType type;
-
-        public DataStruct() {
-        }
-
-        public DataStruct(VarType p_type) {
-            type = p_type;
-        }
-
-    }
-
-    // ---------- Helper methods ----------
-
     private VarType stringToVarType(String typeStr) {
         if (typeStr == null) return null;
 
